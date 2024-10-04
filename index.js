@@ -14,11 +14,22 @@ document.body.appendChild( renderer.domElement );
 
 const loader = new GLTFLoader();
 
+const clock = new THREE.Clock();
+
+let mixer;
+
 let van;
 
 loader.load( 'model.gltf', function ( gltf ) {
 
     van  = gltf.scene;
+    mixer = new THREE.AnimationMixer( gltf.scene );
+        
+    gltf.animations.forEach( ( clip ) => {
+        
+        mixer.clipAction( clip ).play();
+        
+    } );
     scene.add( gltf.scene );
 
 }, undefined, function ( error ) {
@@ -33,6 +44,11 @@ const light = new THREE.AmbientLight( "white" ); // soft white light
 scene.add( light );
 function animate() {
 
+    requestAnimationFrame( animate );
+  
+    const delta = clock.getDelta();
+    
+    if ( mixer ) mixer.update( delta );
     controls.update();
 
     renderer.render( scene, camera );

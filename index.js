@@ -27,7 +27,7 @@ loader.load( 'model.gltf', function ( gltf ) {
         
     gltf.animations.forEach( ( clip ) => {
 
-        if (clip.name  == "drivefw") {
+        if (clip.name  === "drivefw") {
             mixer.clipAction( clip ).play();
         }
         

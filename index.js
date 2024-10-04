@@ -1,60 +1,15 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+const express = require('express');
+const app = express();
 
-window.activeanimation = "drivefw";
+const bodyParser = require('body-parser');
 
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+const sessids = require('sessids')();
 
-const renderer = new THREE.WebGLRenderer();
-const controls = new OrbitControls( camera, renderer.domElement );
-renderer.setSize( window.innerWidth, window.innerHeight );
-renderer.setAnimationLoop( animate );
-document.body.appendChild( renderer.domElement );
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(sessids.sessions);
 
-const loader = new GLTFLoader();
-const clock = new THREE.Clock();
-let mixer;
-let van;
+app.use(express.static("public"));
 
-function spawnvan () {
-    loader.load( 'model.gltf', function ( gltf ) {
-        van = gltf;
-    
-        scene.add( gltf.scene );
-    }, undefined, function ( error ) {
-        console.error( error );
-    });
-}
-
-window.updateAnimation = () => {
-    mixer = new THREE.AnimationMixer( gltf.scene );
-        
-    van.animations.forEach( ( clip ) => {
-        if (clip.name === activeanimation) {
-            mixer.clipAction( clip ).play();
-        }
-    });
-}
-
-spawnvan();
-
-camera.position.set( 0, 1, 5 );
-const light = new THREE.AmbientLight( "white" );
-scene.add( light );
-
-function animate() {
-    const delta = clock.getDelta();
-    if ( mixer ) mixer.update( delta );
-    controls.update();
-    renderer.render( scene, camera );
-}
-
-window.addEventListener('resize', () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize( window.innerWidth, window.innerHeight );
+app.listen(3000, () => {
+    console.log("test development server going live!");
 });
-
-animate();

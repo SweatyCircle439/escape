@@ -29,3 +29,5 @@ function animate() {
     renderer.render( scene, camera );
 
 }
+const light = new THREE.DirectionalLight( 0xFFFFFF );
+scene.add( light );

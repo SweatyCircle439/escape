@@ -18,16 +18,9 @@ const clock = new THREE.Clock();
 let mixer;
 let van;
 
-window.updateAnimation = () => {
+function spawnvan () {
     loader.load( 'model.gltf', function ( gltf ) {
-        van = gltf.scene;
-        mixer = new THREE.AnimationMixer( gltf.scene );
-        
-        gltf.animations.forEach( ( clip ) => {
-            if (clip.name === activeanimation) {
-                mixer.clipAction( clip ).play();
-            }
-        });
+        van = gltf;
     
         scene.add( gltf.scene );
     }, undefined, function ( error ) {
@@ -35,7 +28,17 @@ window.updateAnimation = () => {
     });
 }
 
-updateAnimation();
+function updateAnimation() {
+    mixer = new THREE.AnimationMixer( gltf.scene );
+        
+    van.animations.forEach( ( clip ) => {
+        if (clip.name === activeanimation) {
+            mixer.clipAction( clip ).play();
+        }
+    });
+}
+
+spawnvan();
 
 camera.position.set( 0, 1, 5 );
 const light = new THREE.AmbientLight( "white" );

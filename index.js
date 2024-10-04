@@ -18,7 +18,7 @@ const clock = new THREE.Clock();
 let mixer;
 let van;
 
-function updateAnimation () {
+window.updateAnimation = () => {
     loader.load( 'model.gltf', function ( gltf ) {
         van = gltf.scene;
         mixer = new THREE.AnimationMixer( gltf.scene );
@@ -34,6 +34,8 @@ function updateAnimation () {
         console.error( error );
     });
 }
+
+updateAnimations();
 
 camera.position.set( 0, 1, 5 );
 const light = new THREE.AmbientLight( "white" );

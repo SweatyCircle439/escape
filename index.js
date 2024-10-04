@@ -26,8 +26,10 @@ loader.load( 'model.gltf', function ( gltf ) {
     mixer = new THREE.AnimationMixer( gltf.scene );
         
     gltf.animations.forEach( ( clip ) => {
-        
-        mixer.clipAction( clip ).play();
+
+        if (clip.name  == "drivefw") {
+            mixer.clipAction( clip ).play();
+        }
         
     } );
     scene.add( gltf.scene );
@@ -56,22 +58,3 @@ function animate() {
     window.requestAnimationFrame(animate);
 }
 animate()
-function update() {
-    if (van) {
-        const mixer = new THREE.AnimationMixer( van );
-        const clips = mesh.animations;
-
-        // Update the mixer on each frame
-        function update () {
-            mixer.update( deltaSeconds );
-        }
-
-        // Play a specific animation
-        const clip = THREE.AnimationClip.findByName( clips, 'drivefw' );
-        const action = mixer.clipAction( clip );
-        action.play();
-    }else {
-        window.requestAnimationFrame(update);
-    }
-}
-update();

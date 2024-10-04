@@ -14,8 +14,11 @@ document.body.appendChild( renderer.domElement );
 
 const loader = new GLTFLoader();
 
+let van;
+
 loader.load( 'model.gltf', function ( gltf ) {
 
+    van  = gltf.scene;
     scene.add( gltf.scene );
 
 }, undefined, function ( error ) {
@@ -26,7 +29,7 @@ loader.load( 'model.gltf', function ( gltf ) {
 
 camera.position.z = 5;
 
-const light = new THREE.AmbientLight( 0x404040 ); // soft white light
+const light = new THREE.AmbientLight( "white" ); // soft white light
 scene.add( light );
 function animate() {
 
@@ -34,4 +37,25 @@ function animate() {
 
     renderer.render( scene, camera );
 
+    window.requestAnimationFrame(animate);
 }
+animate()
+function update() {
+    if (van) {
+        const mixer = new THREE.AnimationMixer( van );
+        const clips = mesh.animations;
+
+        // Update the mixer on each frame
+        function update () {
+            mixer.update( deltaSeconds );
+        }
+
+        // Play a specific animation
+        const clip = THREE.AnimationClip.findByName( clips, 'drivefw' );
+        const action = mixer.clipAction( clip );
+        action.play();
+    }else {
+        window.requestAnimationFrame(update);
+    }
+}
+update();

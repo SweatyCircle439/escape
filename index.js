@@ -35,7 +35,7 @@ window.updateAnimation = () => {
     });
 }
 
-updateAnimations();
+updateAnimation();
 
 camera.position.set( 0, 1, 5 );
 const light = new THREE.AmbientLight( "white" );

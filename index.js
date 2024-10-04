@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+let activeanimation = "drivefw";
+
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
@@ -16,20 +18,22 @@ const clock = new THREE.Clock();
 let mixer;
 let van;
 
-loader.load( 'model.gltf', function ( gltf ) {
-    van = gltf.scene;
-    mixer = new THREE.AnimationMixer( gltf.scene );
+function updateAnimation () {
+    loader.load( 'model.gltf', function ( gltf ) {
+        van = gltf.scene;
+        mixer = new THREE.AnimationMixer( gltf.scene );
+        
+        gltf.animations.forEach( ( clip ) => {
+            if (clip.name === activeanimation) {
+                mixer.clipAction( clip ).play();
+            }
+        });
     
-    gltf.animations.forEach( ( clip ) => {
-        if (clip.name === "drivefw") {
-            mixer.clipAction( clip ).play();
-        }
+        scene.add( gltf.scene );
+    }, undefined, function ( error ) {
+        console.error( error );
     });
-
-    scene.add( gltf.scene );
-}, undefined, function ( error ) {
-    console.error( error );
-});
+}
 
 camera.position.set( 0, 1, 5 );
 const light = new THREE.AmbientLight( "white" );

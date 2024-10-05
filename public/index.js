@@ -2,7 +2,38 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-window.activeanimations = [{name: "drivestrt"}, "drivefw"];
+let currentpreset = "idle";
+
+document.addEventListener("keypress", (e) => {
+    if (e.key === "p") {
+        if (currentpreset === "idle") {
+            currentpreset = "drive";
+        } else {
+            currentpreset = "idle";
+        }
+        window.setpreset(currentpreset);
+    }
+});
+
+document.addEventListener("keydown", (e) => {
+
+});
+
+window.activeanimations = [];
+
+const presets = {
+    drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
+    idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}]
+};
+
+window.setpreset = (preset) => {
+    if (typeof preset === "string") {
+        activeanimations = presets[preset];
+    } else {
+        activeanimations = preset;
+    }
+    updateAnimation();
+}
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
@@ -19,24 +50,44 @@ let mixer;
 let van;
 
 function spawnvan () {
-    loader.load( 'model.gltf', function ( gltf ) {
+    loader.load( 'assets/vehicles/freecandyvan.gtlf', function ( gltf ) {
         van = gltf;
     
         scene.add( gltf.scene );
+        mixer = new THREE.AnimationMixer( van.scene );
+
+        setpreset("idle");
     }, undefined, function ( error ) {
         console.error( error );
     });
 }
 
 window.updateAnimation = () => {
-    mixer = new THREE.AnimationMixer( van.scene );
-        
+    mixer.stopAllAction();
+    mixer.time = 0;
     van.animations.forEach( ( clip ) => {
-        if (activeanimations.includes(clip.name)) {
-            mixer.clipAction( clip ).play();
-        }
+        activeanimations.forEach( ( anim , i) => {
+            if (anim.name === clip.name) {
+                mixer.clipAction( clip ).reset().play();
+                if (anim.loopmode === "infinite") {
+                    mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
+                } else {
+                    mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
+                }
+            }
+        });
     });
 }
+loader.load( 'assets/maps/map_city.gtlf', function ( gltf ) {
+    van = gltf;
+
+    scene.add( gltf.scene );
+    mixer = new THREE.AnimationMixer( van.scene );
+
+    setpreset("idle");
+}, undefined, function ( error ) {
+    console.error( error );
+});
 
 spawnvan();
 
@@ -58,3 +109,4 @@ window.addEventListener('resize', () => {
 });
 
 animate();
+

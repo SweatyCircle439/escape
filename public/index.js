@@ -50,7 +50,7 @@ let mixer;
 let van;
 
 function spawnvan () {
-    loader.load( 'assets/vehicles/freecandyvan.gtlf', function ( gltf ) {
+    loader.load( 'assets/vehicles/freecandyvan.gltf', function ( gltf ) {
         van = gltf;
     
         scene.add( gltf.scene );

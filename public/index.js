@@ -4,14 +4,34 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let currentpreset = "idle";
 
-document.addEventListener("keypress", (e) => {
-    if (e.key === "p") {
-        if (currentpreset === "idle") {
-            currentpreset = "drive";
-        } else {
-            currentpreset = "idle";
-        }
-        window.setpreset(currentpreset);
+document.addEventListener("keyup", (e) => {
+    switch (e.key) {
+        case "p": 
+            if (currentpreset === "idle") {
+                currentpreset = "drive";
+            } else {
+                currentpreset = "idle";
+            }
+            window.setpreset(currentpreset);
+            break;
+        case "q":
+            ability(1);
+            break;
+        case "e":
+            ability(2);
+            break;
+        case "r":
+            ability(3);
+            break;
+        case "u":
+            ability(4);
+            break;
+        case "i": 
+            ability(5);
+            break;
+        case "o":
+            ability(6);
+            break;
     }
 });
 
@@ -23,7 +43,8 @@ window.activeanimations = [];
 
 const presets = {
     drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
-    idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}]
+    idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
+    ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
 };
 
 window.setpreset = (preset) => {
@@ -73,6 +94,11 @@ window.updateAnimation = () => {
                     mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
                 } else {
                     mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
+                    if (anim.after) {
+                        setTimeout(() => {
+                            setpreset(anim.after);
+                        }, (clip.duration * anim.loopmode) * 1000);
+                    }
                 }
             }
         });
@@ -110,3 +136,40 @@ window.addEventListener('resize', () => {
 
 animate();
 
+/**
+ * the following code should be on the back-end -- SweatyCircle439
+ */
+const abilities = {
+    freecandyvan: [
+        {function: () => {if (currentpreset === "drive") {
+            setpreset("ability1");
+            return true;
+        }}, usesleft: 1},
+        {function: () => {if (currentpreset === "idle") {
+            setpreset("ability1");
+            return true;
+        }}, usesleft: 1}
+    ]
+};
+function ability(abilityid) {
+
+    if (abilities.freecandyvan.length >= abilityid &&
+        abilities.freecandyvan[abilityid - 1].usesleft > 0)
+    {
+        if (abilities.freecandyvan[abilityid - 1].function()) {
+            abilities.freecandyvan[abilityid - 1].usesleft--;
+        }
+    }else {
+        function run() {
+            for (const abilitie of abilities.freecandyvan) {
+                if (abilitie.usesleft > 0) {
+                    if (abilitie.function()) {
+                        abilitie.usesleft--;
+                        return;
+                    }
+                }
+            }
+        }
+        run()
+    }
+}

@@ -32,11 +32,24 @@ document.addEventListener("keyup", (e) => {
         case "o":
             ability(6);
             break;
+        case "w":
+            stopdriving();
+            break;
+        case "s":
+            stopdriving();
+            break;
     }
 });
 
 document.addEventListener("keydown", (e) => {
-
+    switch (e.key) {
+        case "w":
+            drivefw();
+            break;
+        case "s":
+            drivebw();
+            break;
+    }
 });
 
 window.activeanimations = [];
@@ -44,7 +57,8 @@ window.activeanimations = [];
 const presets = {
     drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
     idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
-    ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
+    ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}],
+    ability2: [{name: 'ability2start', loopmode: 1, after: [{name: 'ability2', loopmode: 20, after: [{name: 'ability2end', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
 };
 
 window.setpreset = (preset) => {
@@ -139,16 +153,30 @@ animate();
 /**
  * the following code should be on the back-end -- SweatyCircle439
  */
+let speed = 0;
+function drivefw() {
+    speed = 3;
+    setpreset("drive");
+}
+function drivebw() {
+    speed = -3;
+    setpreset("drive");
+}
+function stopdriving() {
+    speed = 0;
+    setpreset("idle");
+}
 const abilities = {
     freecandyvan: [
         {function: () => {if (currentpreset === "drive") {
             setpreset("ability1");
             return true;
         }}, usesleft: 1},
-        {function: () => {if (currentpreset === "idle") {
-            setpreset("ability1");
+        {function: () => {if (currentpreset === "drive") {
+            speed = 10;
+            setpreset("ability2");
             return true;
-        }}, usesleft: 1}
+        }}, usesleft: 10}
     ]
 };
 function ability(abilityid) {

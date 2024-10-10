@@ -156,15 +156,24 @@ animate();
 let speed = 0;
 function drivefw() {
     speed = 3;
-    setpreset("drive");
+    if (currentpreset == "idle") {
+        setpreset("drive");
+        currentpreset = "drive";
+    }
 }
 function drivebw() {
     speed = -3;
-    setpreset("drive");
+    if (currentpreset == "idle") {
+        setpreset("drive");
+        currentpreset = "drive";
+    }
 }
 function stopdriving() {
     speed = 0;
-    setpreset("idle");
+    if (currentpreset == "drive") {
+        setpreset("idle");
+        currentpreset = "idle";
+    }
 }
 const abilities = {
     freecandyvan: [

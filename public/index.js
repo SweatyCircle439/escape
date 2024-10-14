@@ -2,6 +2,82 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+const username = "testPlayer439"
+
+class vehicletype {
+    constructor(scene, name, file, animationpresets, abilities) {
+        this.name = name;
+        this.scene = scene;
+        this.file = file;
+        this.animationpresets = animationpresets;
+        this.abilities = abilities;
+        window[`class.vehicle.${this.name}`] = class {
+            constructor(position, driver, vehicletype) {
+                this.position = position;
+                this.rotation = {x: 0, y: 0, z: 0};
+                this.currentpreset = "idle";
+                this.activeanimations = [];
+                this.objectloaded = false;
+                this.driver = driver;
+                this.vehicletype = vehicletype;
+                this.update = () => {
+                    if (this.objectloaded) {
+                        this.mixer.stopAllAction();
+                        this.mixer.time = 0;
+                        this.object.animations.forEach( ( clip ) => {
+                            const animations = activeanimations;
+                            animations.push({name: "root", loopmode: "infinite"});
+                            animations.forEach( ( anim , i) => {
+                                if (anim.name === clip.name) {
+                                    mixer.clipAction( clip ).reset().play();
+                                    if (anim.loopmode === "infinite") {
+                                        mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
+                                    } else {
+                                        mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
+                                        if (anim.after) {
+                                            setTimeout(() => {
+                                                setpreset(anim.after);
+                                            }, (clip.duration * anim.loopmode) * 1000);
+                                        }
+                                    }
+                                    if (anim.run) {
+                                        anim.run();
+                                    }
+                                }
+                            });
+                        });
+                    }else {
+                        window.setTimeout(this.update, 100);
+                    }
+                };
+                this.setpreset = (preset) => {
+                    if (typeof preset === "string") {
+                        activeanimations = this.vehicletype.animationpresets[preset];
+                    } else {
+                        activeanimations = preset;
+                    }
+                    this.update();
+                };
+
+                loader.load( this.vehicletype.file, function ( gltf ) {
+                    this.object = gltf;
+                    this.objectloaded = true;
+                
+                    this.vehicletype.scene.add( gltf.scene );
+                    this.mixer = new THREE.AnimationMixer( this.object.scene );
+            
+                    this.setpreset("idle");
+                }, undefined, function ( error ) {
+                    console.error( error );
+                });
+            }
+        }
+        function instance(position, driver) {
+            return new window[`class.vehicle.${this.name}`](position, driver, this);
+        }
+    }
+}
+
 let currentpreset = "idle";
 
 document.addEventListener("keyup", (e) => {

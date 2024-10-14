@@ -58,6 +58,9 @@ const presets = {
     drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
     idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
     ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}],
+    ability1one: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability2one: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability3one: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability2: [{name: 'ability2start', loopmode: 1, after: [{name: 'ability2', loopmode: 20, after: [{name: 'ability2end', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
 };
 
@@ -85,7 +88,7 @@ let mixer;
 let van;
 
 function spawnvan () {
-    loader.load( 'assets/vehicles/freecandyvan.gltf', function ( gltf ) {
+    loader.load( 'assets/vehicles/pickup.gltf', function ( gltf ) {
         van = gltf;
     
         scene.add( gltf.scene );
@@ -101,7 +104,9 @@ window.updateAnimation = () => {
     mixer.stopAllAction();
     mixer.time = 0;
     van.animations.forEach( ( clip ) => {
-        activeanimations.forEach( ( anim , i) => {
+        const animations = activeanimations;
+        animations.push({name: "root", loopmode: "infinite"});
+        animations.forEach( ( anim , i) => {
             if (anim.name === clip.name) {
                 mixer.clipAction( clip ).reset().play();
                 if (anim.loopmode === "infinite") {
@@ -113,6 +118,9 @@ window.updateAnimation = () => {
                             setpreset(anim.after);
                         }, (clip.duration * anim.loopmode) * 1000);
                     }
+                }
+                if (anim.run) {
+                    anim.run();
                 }
             }
         });
@@ -154,25 +162,32 @@ animate();
  * the following code should be on the back-end -- SweatyCircle439
  */
 let speed = 0;
+let canchangemode = true;
 function drivefw() {
-    speed = 3;
-    if (currentpreset == "idle") {
-        setpreset("drive");
-        currentpreset = "drive";
+    if (canchangemode) {
+        speed = 3;
+        if (currentpreset == "idle") {
+            setpreset("drive");
+            currentpreset = "drive";
+        }
     }
 }
 function drivebw() {
-    speed = -3;
-    if (currentpreset == "idle") {
-        setpreset("drive");
-        currentpreset = "drive";
+    if (canchangemode) {
+        speed = -3;
+        if (currentpreset == "idle") {
+            setpreset("drive");
+            currentpreset = "drive";
+        }
     }
 }
 function stopdriving() {
-    speed = 0;
-    if (currentpreset == "drive") {
-        setpreset("idle");
-        currentpreset = "idle";
+    if (canchangemode) {
+        speed = 0;
+        if (currentpreset == "drive") {
+            setpreset("idle");
+            currentpreset = "idle";
+        }
     }
 }
 const abilities = {
@@ -186,22 +201,38 @@ const abilities = {
             setpreset("ability2");
             return true;
         }}, usesleft: 10}
+    ],
+    pickup: [
+        {function: () => {if (currentpreset === "idle") {
+            setpreset("ability1one");
+            return true;
+        }},usesleft: 4},
+        {function: () => {if (currentpreset === "idle") {
+            setpreset("ability2one");
+            return true;
+        }},usesleft: 3},
+        {function: () => {if (currentpreset === "drive") {
+            setpreset("ability3one");
+            return true;
+        }},usesleft: 5}
     ]
 };
 function ability(abilityid) {
 
-    if (abilities.freecandyvan.length >= abilityid &&
-        abilities.freecandyvan[abilityid - 1].usesleft > 0)
+    if (abilities.pickup.length >= abilityid &&
+        abilities.pickup[abilityid - 1].usesleft > 0)
     {
-        if (abilities.freecandyvan[abilityid - 1].function()) {
-            abilities.freecandyvan[abilityid - 1].usesleft--;
+        if (abilities.pickup[abilityid - 1].function()) {
+            abilities.pickup[abilityid - 1].usesleft--;
+            canchangemode = false;
         }
     }else {
         function run() {
-            for (const abilitie of abilities.freecandyvan) {
+            for (const abilitie of abilities.pickup) {
                 if (abilitie.usesleft > 0) {
                     if (abilitie.function()) {
                         abilitie.usesleft--;
+                        canchangemode = false;
                         return;
                     }
                 }

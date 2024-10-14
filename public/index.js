@@ -219,25 +219,27 @@ const abilities = {
 };
 function ability(abilityid) {
 
-    if (abilities.pickup.length >= abilityid &&
-        abilities.pickup[abilityid - 1].usesleft > 0)
-    {
-        if (abilities.pickup[abilityid - 1].function()) {
-            abilities.pickup[abilityid - 1].usesleft--;
-            canchangemode = false;
-        }
-    }else {
-        function run() {
-            for (const abilitie of abilities.pickup) {
-                if (abilitie.usesleft > 0) {
-                    if (abilitie.function()) {
-                        abilitie.usesleft--;
-                        canchangemode = false;
-                        return;
+    if (canchangemode) {
+        if (abilities.pickup.length >= abilityid &&
+            abilities.pickup[abilityid - 1].usesleft > 0)
+        {
+            if (abilities.pickup[abilityid - 1].function()) {
+                abilities.pickup[abilityid - 1].usesleft--;
+                canchangemode = false;
+            }
+        }else {
+            function run() {
+                for (const abilitie of abilities.pickup) {
+                    if (abilitie.usesleft > 0) {
+                        if (abilitie.function()) {
+                            abilitie.usesleft--;
+                            canchangemode = false;
+                            return;
+                        }
                     }
                 }
             }
+            run()
         }
-        run()
     }
 }

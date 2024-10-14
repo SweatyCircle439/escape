@@ -2,78 +2,100 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const username = "testPlayer439"
+const username = "testPlayer439";
+
+/** @type {function[]} */
+const animateupdates = [];
+
+/**
+ * @param { THREE.Vector3 } position - The initial position of the vehicle.
+ * @param { string } driver - The name of the driver.
+ * @param { vehicletype } vehicletype - The type of vehicle.
+*/
+
+class vehicleInstance {
+    constructor(/** @type {THREE.Vector3} **/position, /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
+        this.position = position;
+        this.rotation = {x: 0, y: 0, z: 0};
+        this.currentpreset = "idle";
+        this.activeanimations = [];
+        this.objectloaded = false;
+        this.driver = driver;
+        this.vehicletype = vehicletype;
+        this.lastupdatedspeed = -30;
+        this.canchangemode = true;
+        this.currentspeed = 0;
+        this.update = () => {
+            if (this.objectloaded) {
+                this.mixer.stopAllAction();
+                this.mixer.time = 0;
+                this.object.animations.forEach( ( clip ) => {
+                    const animations = activeanimations;
+                    animations.push({name: "root", loopmode: "infinite"});
+                    animations.forEach( ( anim , i) => {
+                        if (anim.name === clip.name) {
+                            mixer.clipAction( clip ).reset().play();
+                            if (anim.loopmode === "infinite") {
+                                mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
+                            } else {
+                                mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
+                                if (anim.after) {
+                                    setTimeout(() => {
+                                        setpreset(anim.after);
+                                    }, (clip.duration * anim.loopmode) * 1000);
+                                }
+                            }
+                            if (anim.run) {
+                                anim.run();
+                            }
+                        }
+                    });
+                });
+            }
+        };
+        this.setpreset = (preset) => {
+            if (typeof preset === "string") {
+                activeanimations = this.vehicletype.animationpresets[preset];
+            } else {
+                activeanimations = preset;
+            }
+            this.update();
+        };
+
+        this.animateupdate = (delta) => {
+            if ( this.mixer ) this.mixer.update( delta );
+        }
+
+        animateupdates.push(this.animateupdate);
+
+        loader.load( this.vehicletype.file, function ( gltf ) {
+            this.object = gltf;
+            this.objectloaded = true;
+        
+            this.vehicletype.scene.add( gltf.scene );
+            this.mixer = new THREE.AnimationMixer( this.object.scene );
+    
+            this.setpreset("idle");
+            this.update();
+        }, undefined, function ( error ) {
+            console.error( error );
+        });
+    }
+}
 
 class vehicletype {
-    constructor(scene, name, file, animationpresets, abilities) {
+    constructor(scene, name, file, animationpresets, abilities, maxspeed, acceleration, slowdown = acceleration * 2, brakespeed = maxspeed) {
         this.name = name;
         this.scene = scene;
         this.file = file;
         this.animationpresets = animationpresets;
         this.abilities = abilities;
-        window[`class.vehicle.${this.name}`] = class {
-            constructor(position, driver, vehicletype) {
-                this.position = position;
-                this.rotation = {x: 0, y: 0, z: 0};
-                this.currentpreset = "idle";
-                this.activeanimations = [];
-                this.objectloaded = false;
-                this.driver = driver;
-                this.vehicletype = vehicletype;
-                this.update = () => {
-                    if (this.objectloaded) {
-                        this.mixer.stopAllAction();
-                        this.mixer.time = 0;
-                        this.object.animations.forEach( ( clip ) => {
-                            const animations = activeanimations;
-                            animations.push({name: "root", loopmode: "infinite"});
-                            animations.forEach( ( anim , i) => {
-                                if (anim.name === clip.name) {
-                                    mixer.clipAction( clip ).reset().play();
-                                    if (anim.loopmode === "infinite") {
-                                        mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
-                                    } else {
-                                        mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
-                                        if (anim.after) {
-                                            setTimeout(() => {
-                                                setpreset(anim.after);
-                                            }, (clip.duration * anim.loopmode) * 1000);
-                                        }
-                                    }
-                                    if (anim.run) {
-                                        anim.run();
-                                    }
-                                }
-                            });
-                        });
-                    }else {
-                        window.setTimeout(this.update, 100);
-                    }
-                };
-                this.setpreset = (preset) => {
-                    if (typeof preset === "string") {
-                        activeanimations = this.vehicletype.animationpresets[preset];
-                    } else {
-                        activeanimations = preset;
-                    }
-                    this.update();
-                };
-
-                loader.load( this.vehicletype.file, function ( gltf ) {
-                    this.object = gltf;
-                    this.objectloaded = true;
-                
-                    this.vehicletype.scene.add( gltf.scene );
-                    this.mixer = new THREE.AnimationMixer( this.object.scene );
-            
-                    this.setpreset("idle");
-                }, undefined, function ( error ) {
-                    console.error( error );
-                });
-            }
-        }
+        this.maxspeed = maxspeed;
+        this.acceleration = acceleration;
+        this.brakespeed = brakespeed;
+        this.slowdown = slowdown;
         function instance(position, driver) {
-            return new window[`class.vehicle.${this.name}`](position, driver, this);
+            return new vehicleInstance(position, driver, this);
         }
     }
 }
@@ -221,7 +243,9 @@ scene.add( light );
 
 function animate() {
     const delta = clock.getDelta();
-    if ( mixer ) mixer.update( delta );
+    for (const func of animateupdates) {
+        func(delta);
+    }
     controls.update();
     renderer.render( scene, camera );
 }
@@ -237,11 +261,22 @@ animate();
 /**
  * the following code should be on the back-end -- SweatyCircle439
  */
+
+let tick = 0;
+
+window.setInterval(() => {tick++;}, 1000 / 60);
+
 let speed = 0;
 let canchangemode = true;
+
+/** @type {vehicleInstance} */
+let drivingvehicle;
+
 function drivefw() {
-    if (canchangemode) {
-        speed = 3;
+    if (drivingvehicle.canchangemode) {
+        if (drivingvehicle.currentspeed < drivingvehicle.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
+            drivingvehicle.currentspeed += drivingvehicle.acceleration;
+        }
         if (currentpreset == "idle") {
             setpreset("drive");
             currentpreset = "drive";

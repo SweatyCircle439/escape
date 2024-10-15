@@ -16,14 +16,14 @@ const animateupdates = [];
 class vehicleInstance {
     constructor(/** @type {THREE.Vector3} **/position, /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
         this.abilities = [];
-        for (const element of object) {
-            
-        }
         this.currentpreset = "idle";
         this.activeanimations = [];
         this.objectloaded = false;
         this.driver = driver;
         this.vehicletype = vehicletype;
+        for (const abilitie of this.vehicletype.abilities) {
+            this.abilities.push(abilitie);
+        }
         this.lastupdatedspeed = -30;
         this.canchangemode = true;
         this.currentspeed = 0;
@@ -341,16 +341,16 @@ const abilities = {
 function ability(abilityid) {
 
     if (canchangemode) {
-        if (drivingvehicle.vehicletype.abilities.length >= abilityid &&
-            drivingvehicle.vehicletype.abilities[abilityid - 1].usesleft > 0)
+        if (drivingvehicle.abilities.length >= abilityid &&
+            drivingvehicle.abilities[abilityid - 1].usesleft > 0)
         {
-            if (drivingvehicle.vehicletype.abilities[abilityid - 1].function()) {
-                drivingvehicle.vehicletype.abilities[abilityid - 1].usesleft--;
+            if (drivingvehicle.abilities[abilityid - 1].function()) {
+                drivingvehicle.abilities[abilityid - 1].usesleft--;
                 canchangemode = false;
             }
         }else {
             function run() {
-                for (const abilitie of drivingvehicle.vehicletype.abilities) {
+                for (const abilitie of drivingvehicle.abilities) {
                     if (abilitie.usesleft > 0) {
                         if (abilitie.function()) {
                             abilitie.usesleft--;

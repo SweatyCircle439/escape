@@ -15,8 +15,6 @@ const animateupdates = [];
 
 class vehicleInstance {
     constructor(/** @type {THREE.Vector3} **/position, /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
-        this.position = position;
-        this.rotation = {x: 0, y: 0, z: 0};
         this.currentpreset = "idle";
         this.activeanimations = [];
         this.objectloaded = false;
@@ -64,6 +62,12 @@ class vehicleInstance {
 
         this.animateupdate = (delta) => {
             if ( this.mixer ) this.mixer.update( delta );
+
+            const direction = new THREE.Vector3(0, 0, 1);
+            direction.applyQuaternion(this.model.scene.quaternion);
+            direction.normalize();
+        
+            this.model.scene.position.add(direction.multiplyScalar(this.currentspeed));
         }
 
         animateupdates.push(this.animateupdate);
@@ -72,7 +76,9 @@ class vehicleInstance {
             this.object = gltf;
             this.objectloaded = true;
         
-            this.vehicletype.scene.add( gltf.scene );
+            this.vehicletype.scene.add( this.object.scene );
+            this.object.scene.position = position;
+
             this.mixer = new THREE.AnimationMixer( this.object.scene );
     
             this.setpreset("idle");
@@ -274,8 +280,8 @@ let drivingvehicle;
 
 function drivefw() {
     if (drivingvehicle.canchangemode) {
-        if (drivingvehicle.currentspeed < drivingvehicle.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
-            drivingvehicle.currentspeed += drivingvehicle.acceleration;
+        if (drivingvehicle.currentspeed < drivingvehicle.vehicletype.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
+            drivingvehicle.currentspeed += drivingvehicle.vehicletype.acceleration;
         }
         if (currentpreset == "idle") {
             setpreset("drive");
@@ -284,8 +290,10 @@ function drivefw() {
     }
 }
 function drivebw() {
-    if (canchangemode) {
-        speed = -3;
+    if (drivingvehicle.canchangemode) {
+        if (drivingvehicle.currentspeed > -drivingvehicle.vehicletype.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
+            drivingvehicle.currentspeed -= drivingvehicle.vehicletype.acceleration;
+        }
         if (currentpreset == "idle") {
             setpreset("drive");
             currentpreset = "drive";
@@ -293,11 +301,14 @@ function drivebw() {
     }
 }
 function stopdriving() {
-    if (canchangemode) {
-        speed = 0;
-        if (currentpreset == "drive") {
-            setpreset("idle");
-            currentpreset = "idle";
+    
+    if (drivingvehicle.canchangemode) {
+        if (drivingvehicle.currentspeed < drivingvehicle.vehicletype.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
+            drivingvehicle.currentspeed -= drivingvehicle.vehicletype.brakespeed;
+        }
+        if (currentpreset == "idle") {
+            setpreset("drive");
+            currentpreset = "drive";
         }
     }
 }
@@ -331,16 +342,16 @@ const abilities = {
 function ability(abilityid) {
 
     if (canchangemode) {
-        if (abilities.pickup.length >= abilityid &&
-            abilities.pickup[abilityid - 1].usesleft > 0)
+        if (drivingvehicle.vehicletype.abilities.length >= abilityid &&
+            drivingvehicle.vehicletype.abilities[abilityid - 1].usesleft > 0)
         {
-            if (abilities.pickup[abilityid - 1].function()) {
-                abilities.pickup[abilityid - 1].usesleft--;
+            if (drivingvehicle.vehicletype.abilities[abilityid - 1].function()) {
+                drivingvehicle.vehicletype.abilities[abilityid - 1].usesleft--;
                 canchangemode = false;
             }
         }else {
             function run() {
-                for (const abilitie of abilities.pickup) {
+                for (const abilitie of drivingvehicle.vehicletype.abilities) {
                     if (abilitie.usesleft > 0) {
                         if (abilitie.function()) {
                             abilitie.usesleft--;

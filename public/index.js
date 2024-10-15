@@ -15,6 +15,10 @@ const animateupdates = [];
 
 class vehicleInstance {
     constructor(/** @type {THREE.Vector3} **/position, /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
+        this.abilities = [];
+        for (const element of object) {
+            
+        }
         this.currentpreset = "idle";
         this.activeanimations = [];
         this.objectloaded = false;
@@ -255,6 +259,8 @@ window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles
     ability1: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+}, {
+
 });
 
 /**

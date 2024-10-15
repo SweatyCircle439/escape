@@ -191,19 +191,6 @@ const clock = new THREE.Clock();
 let mixer;
 let van;
 
-function spawnvan () {
-    loader.load( 'assets/vehicles/pickup.gltf', function ( gltf ) {
-        van = gltf;
-    
-        scene.add( gltf.scene );
-        mixer = new THREE.AnimationMixer( van.scene );
-
-        setpreset("idle");
-    }, undefined, function ( error ) {
-        console.error( error );
-    });
-}
-
 window.updateAnimation = () => {
     mixer.stopAllAction();
     mixer.time = 0;
@@ -241,8 +228,6 @@ loader.load( 'assets/maps/map_city.gtlf', function ( gltf ) {
     console.error( error );
 });
 
-spawnvan();
-
 camera.position.set( 0, 1, 5 );
 const light = new THREE.AmbientLight( "white" );
 scene.add( light );
@@ -263,6 +248,14 @@ window.addEventListener('resize', () => {
 });
 
 animate();
+
+window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles/pickup.gltf", {
+    drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
+    idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
+    ability1: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+});
 
 /**
  * the following code should be on the back-end -- SweatyCircle439
@@ -303,12 +296,12 @@ function drivebw() {
 function stopdriving() {
     
     if (drivingvehicle.canchangemode) {
-        if (drivingvehicle.currentspeed < drivingvehicle.vehicletype.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
+        if (drivingvehicle.currentspeed > 0) {
             drivingvehicle.currentspeed -= drivingvehicle.vehicletype.brakespeed;
         }
-        if (currentpreset == "idle") {
-            setpreset("drive");
-            currentpreset = "drive";
+        if (currentpreset == "drive") {
+            setpreset("ide");
+            currentpreset = "idle";
         }
     }
 }

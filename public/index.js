@@ -2,10 +2,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+window.THREE = THREE;
+
 const username = "testPlayer439";
 
 /** @type {function[]} */
 const animateupdates = [];
+
+/** @type {vehicleInstance[]} */
+const vehicleinstances = [];
 
 /**
  * @param { THREE.Vector3 } position - The initial position of the vehicle.
@@ -14,7 +19,7 @@ const animateupdates = [];
 */
 
 class vehicleInstance {
-    constructor(/** @type {THREE.Vector3} **/position, /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
+    constructor(position = new THREE.Vector3(0, 0, 0), /** @type {string} **/driver, /** @type {vehicletype} **/vehicletype) {
         this.abilities = [];
         this.currentpreset = "idle";
         this.activeanimations = [];
@@ -26,6 +31,7 @@ class vehicleInstance {
         }
         this.lastupdatedspeed = -30;
         this.canchangemode = true;
+        this.object = null;
         this.currentspeed = 0;
         this.update = () => {
             if (this.objectloaded) {
@@ -64,37 +70,48 @@ class vehicleInstance {
             this.update();
         };
 
-        this.animateupdate = (delta) => {
-            if ( this.mixer ) this.mixer.update( delta );
+        const currentclass = this;
 
-            const direction = new THREE.Vector3(0, 0, 1);
-            direction.applyQuaternion(this.model.scene.quaternion);
-            direction.normalize();
-        
-            this.model.scene.position.add(direction.multiplyScalar(this.currentspeed));
+        this.animateupdate = (delta) => {
+            
+            if ( currentclass.mixer ) currentclass.mixer.update( delta );
+
+            if (currentclass.objectloaded) {
+                const direction = new THREE.Vector3(0, 0, -1);
+                direction.applyQuaternion(currentclass.object.scene.quaternion);
+                direction.normalize();
+            
+                currentclass.object.scene.position.add(direction.multiplyScalar(currentclass.currentspeed));
+            }
         }
 
         animateupdates.push(this.animateupdate);
 
-        loader.load( this.vehicletype.file, function ( gltf ) {
-            this.object = gltf;
-            this.objectloaded = true;
+        loader.load( currentclass.vehicletype.file, function ( gltf ) {
+            currentclass.object = gltf;
+            currentclass.objectloaded = true;
         
-            this.vehicletype.scene.add( this.object.scene );
-            this.object.scene.position = position;
+            currentclass.vehicletype.scene.add( currentclass.object.scene );
+            currentclass.object.scene.position = position;
 
-            this.mixer = new THREE.AnimationMixer( this.object.scene );
+            currentclass.mixer = new THREE.AnimationMixer( currentclass.object.scene );
     
-            this.setpreset("idle");
-            this.update();
+            currentclass.setpreset("idle");
+            currentclass.update();
         }, undefined, function ( error ) {
             console.error( error );
         });
+        vehicleinstances.push(this);
+        for (const vehicleinstance of vehicleinstances) {
+            if (vehicleinstance.driver == username) {
+                drivingvehicle = vehicleinstance;
+            }
+        }
     }
 }
 
 class vehicletype {
-    constructor(scene, name, file, animationpresets, abilities, maxspeed, acceleration, slowdown = acceleration * 2, brakespeed = maxspeed) {
+    constructor(scene, name, file, animationpresets, abilities, maxspeed, acceleration, turnspeed = acceleration, slowdown = acceleration * 2, brakespeed = maxspeed) {
         this.name = name;
         this.scene = scene;
         this.file = file;
@@ -104,7 +121,8 @@ class vehicletype {
         this.acceleration = acceleration;
         this.brakespeed = brakespeed;
         this.slowdown = slowdown;
-        function instance(position, driver) {
+        this.turnspeed = turnspeed;
+        this.instance = (position, driver) => {
             return new vehicleInstance(position, driver, this);
         }
     }
@@ -156,6 +174,12 @@ document.addEventListener("keydown", (e) => {
             break;
         case "s":
             drivebw();
+            break;
+        case "a":
+            turnleft();
+            break;
+        case "d":
+            turnright();
             break;
     }
 });
@@ -259,15 +283,27 @@ window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles
     ability1: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
-}, {
-
-});
+}, [
+    {function: () => {if (currentpreset === "idle") {
+        setpreset("ability1");
+        return true;
+    }},usesleft: 4},
+    {function: () => {if (currentpreset === "idle") {
+        setpreset("ability2");
+        return true;
+    }},usesleft: 3},
+    {function: () => {if (currentpreset === "drive") {
+        setpreset("ability3");
+        return true;
+    }},usesleft: 5}
+], 0.1, 0.0001);
 
 /**
  * the following code should be on the back-end -- SweatyCircle439
  */
 
 let tick = 0;
+
 
 window.setInterval(() => {tick++;}, 1000 / 60);
 
@@ -276,6 +312,11 @@ let canchangemode = true;
 
 /** @type {vehicleInstance} */
 let drivingvehicle;
+for (const vehicleinstance of vehicleinstances) {
+    if (vehicleinstance.driver == username) {
+        drivingvehicle = vehicleinstance;
+    }
+}
 
 function drivefw() {
     if (drivingvehicle.canchangemode) {
@@ -291,13 +332,19 @@ function drivefw() {
 function drivebw() {
     if (drivingvehicle.canchangemode) {
         if (drivingvehicle.currentspeed > -drivingvehicle.vehicletype.maxspeed && tick - drivingvehicle.lastupdatedspeed >= 30) {
-            drivingvehicle.currentspeed -= drivingvehicle.vehicletype.acceleration;
+            drivingvehicle.currentspeed -= drivingvehicle.vehicletype.slowdown;
         }
         if (currentpreset == "idle") {
             setpreset("drive");
             currentpreset = "drive";
         }
     }
+}
+function turnleft() {
+    drivingvehicle.object.scene.rotation.y += drivingvehicle.vehicletype.turnspeed;
+}
+function turnright() {
+    drivingvehicle.object.scene.rotation.y += drivingvehicle.vehicletype.turnspeed;
 }
 function stopdriving() {
     
@@ -340,13 +387,13 @@ const abilities = {
 };
 function ability(abilityid) {
 
-    if (canchangemode) {
+    if (drivingvehicle.canchangemode) {
         if (drivingvehicle.abilities.length >= abilityid &&
             drivingvehicle.abilities[abilityid - 1].usesleft > 0)
         {
             if (drivingvehicle.abilities[abilityid - 1].function()) {
                 drivingvehicle.abilities[abilityid - 1].usesleft--;
-                canchangemode = false;
+                drivingvehicle.canchangemode = false;
             }
         }else {
             function run() {
@@ -354,7 +401,7 @@ function ability(abilityid) {
                     if (abilitie.usesleft > 0) {
                         if (abilitie.function()) {
                             abilitie.usesleft--;
-                            canchangemode = false;
+                            drivingvehicle.canchangemode = false;
                             return;
                         }
                     }

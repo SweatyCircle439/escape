@@ -38,18 +38,18 @@ class vehicleInstance {
                 this.mixer.stopAllAction();
                 this.mixer.time = 0;
                 this.object.animations.forEach( ( clip ) => {
-                    const animations = activeanimations;
+                    const animations = this.activeanimations;
                     animations.push({name: "root", loopmode: "infinite"});
                     animations.forEach( ( anim , i) => {
                         if (anim.name === clip.name) {
-                            mixer.clipAction( clip ).reset().play();
+                            this.mixer.clipAction( clip ).reset().play();
                             if (anim.loopmode === "infinite") {
-                                mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
+                                this.mixer.clipAction( clip ).setLoop( THREE.LoopRepeat );
                             } else {
-                                mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
+                                this.mixer.clipAction( clip ).setLoop( THREE.LoopRepeat, anim.loopmode );
                                 if (anim.after) {
                                     setTimeout(() => {
-                                        setpreset(anim.after);
+                                        this.setpreset(anim.after);
                                     }, (clip.duration * anim.loopmode) * 1000);
                                 }
                             }
@@ -63,9 +63,9 @@ class vehicleInstance {
         };
         this.setpreset = (preset) => {
             if (typeof preset === "string") {
-                activeanimations = this.vehicletype.animationpresets[preset];
+                this.activeanimations = this.vehicletype.animationpresets[preset];
             } else {
-                activeanimations = preset;
+                thi.activeanimations = preset;
             }
             this.update();
         };
@@ -92,7 +92,6 @@ class vehicleInstance {
             currentclass.objectloaded = true;
         
             currentclass.vehicletype.scene.add( currentclass.object.scene );
-            currentclass.object.scene.position = position;
 
             currentclass.mixer = new THREE.AnimationMixer( currentclass.object.scene );
     
@@ -138,7 +137,6 @@ document.addEventListener("keyup", (e) => {
             } else {
                 currentpreset = "idle";
             }
-            window.setpreset(currentpreset);
             break;
         case "q":
             ability(1);
@@ -284,19 +282,19 @@ window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles
     ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
     ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
 }, [
-    {function: () => {if (currentpreset === "idle") {
-        setpreset("ability1");
+    {function: (clss) => {if (currentpreset === "idle") {
+        clss.setpreset("ability1");
         return true;
     }},usesleft: 4},
-    {function: () => {if (currentpreset === "idle") {
-        setpreset("ability2");
+    {function: (clss) => {if (currentpreset === "idle") {
+        clss.setpreset("ability2");
         return true;
     }},usesleft: 3},
-    {function: () => {if (currentpreset === "drive") {
-        setpreset("ability3");
+    {function: (clss) => {if (currentpreset === "drive") {
+        clss.setpreset("ability3");
         return true;
     }},usesleft: 5}
-], 0.1, 0.0001);
+], 0.1, 0.0001, 1);
 
 /**
  * the following code should be on the back-end -- SweatyCircle439
@@ -324,7 +322,7 @@ function drivefw() {
             drivingvehicle.currentspeed += drivingvehicle.vehicletype.acceleration;
         }
         if (currentpreset == "idle") {
-            setpreset("drive");
+            drivingvehicle.setpreset("drive");
             currentpreset = "drive";
         }
     }
@@ -335,16 +333,16 @@ function drivebw() {
             drivingvehicle.currentspeed -= drivingvehicle.vehicletype.slowdown;
         }
         if (currentpreset == "idle") {
-            setpreset("drive");
+            drivingvehicle.setpreset("drive");
             currentpreset = "drive";
         }
     }
 }
 function turnleft() {
-    drivingvehicle.object.scene.rotation.y += drivingvehicle.vehicletype.turnspeed;
+    drivingvehicle.object.scene.rotation.y += (Math.PI / 360) * drivingvehicle.vehicletype.turnspeed;
 }
 function turnright() {
-    drivingvehicle.object.scene.rotation.y += drivingvehicle.vehicletype.turnspeed;
+    drivingvehicle.object.scene.rotation.y -= (Math.PI / 360) * drivingvehicle.vehicletype.turnspeed;
 }
 function stopdriving() {
     
@@ -352,8 +350,11 @@ function stopdriving() {
         if (drivingvehicle.currentspeed > 0) {
             drivingvehicle.currentspeed -= drivingvehicle.vehicletype.brakespeed;
         }
+        if (drivingvehicle.currentspeed < 0) {
+            drivingvehicle.currentspeed = 0;
+        }
         if (currentpreset == "drive") {
-            setpreset("ide");
+            drivingvehicle.setpreset("idle");
             currentpreset = "idle";
         }
     }
@@ -391,7 +392,7 @@ function ability(abilityid) {
         if (drivingvehicle.abilities.length >= abilityid &&
             drivingvehicle.abilities[abilityid - 1].usesleft > 0)
         {
-            if (drivingvehicle.abilities[abilityid - 1].function()) {
+            if (drivingvehicle.abilities[abilityid - 1].function(drivingvehicle)) {
                 drivingvehicle.abilities[abilityid - 1].usesleft--;
                 drivingvehicle.canchangemode = false;
             }
@@ -399,7 +400,7 @@ function ability(abilityid) {
             function run() {
                 for (const abilitie of drivingvehicle.abilities) {
                     if (abilitie.usesleft > 0) {
-                        if (abilitie.function()) {
+                        if (abilitie.function(drivingvehicle)) {
                             abilitie.usesleft--;
                             drivingvehicle.canchangemode = false;
                             return;

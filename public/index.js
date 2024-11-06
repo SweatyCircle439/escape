@@ -23,6 +23,7 @@ class vehicleInstance {
         this.abilities = [];
         this.currentpreset = "idle";
         this.activeanimations = [];
+        this.initialposition = position;
         this.objectloaded = false;
         this.driver = driver;
         this.vehicletype = vehicletype;
@@ -54,7 +55,7 @@ class vehicleInstance {
                                 }
                             }
                             if (anim.run) {
-                                anim.run();
+                                anim.run(this);
                             }
                         }
                     });
@@ -65,12 +66,49 @@ class vehicleInstance {
             if (typeof preset === "string") {
                 this.activeanimations = this.vehicletype.animationpresets[preset];
             } else {
-                thi.activeanimations = preset;
+                this.activeanimations = preset;
             }
             this.update();
         };
 
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = 256;
+        canvas.height = 100;
+        context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = 'white';
+        context.font = '30px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        context.fillText(this.driver, canvas.width / 2, canvas.height / 2, 256);
+        const texture = new THREE.CanvasTexture(canvas);
+        const planeGeometry = new THREE.PlaneGeometry(2, 1);
+        const planeMaterial = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true
+        });
+        this.nametag = new THREE.Mesh(planeGeometry, planeMaterial);
+        this.vehicletype.scene.add(this.nametag);
+        this.nametag.position.set(this.initialposition.x, this.initialposition.y + 2.5, this.initialposition.z);
+
         const currentclass = this;
+
+        loader.load( currentclass.vehicletype.file, function ( gltf ) {
+            currentclass.object = gltf;
+            currentclass.objectloaded = true;
+        
+            currentclass.vehicletype.scene.add( currentclass.object.scene );
+
+            currentclass.object.scene.position.set(currentclass.initialposition.x, currentclass.initialposition.y, currentclass.initialposition.z);
+
+            currentclass.mixer = new THREE.AnimationMixer( currentclass.object.scene );
+    
+            currentclass.setpreset("idle");
+            currentclass.update();
+        }, undefined, function ( error ) {
+            console.error( error );
+        });
 
         this.animateupdate = (delta) => {
             
@@ -82,24 +120,20 @@ class vehicleInstance {
                 direction.normalize();
             
                 currentclass.object.scene.position.add(direction.multiplyScalar(currentclass.currentspeed));
+                currentclass.nametag.position.set(currentclass.object.scene.position.x, currentclass.object.scene.position.y + 2.5, currentclass.object.scene.position.z);
+                if (currentclass.driver == username) {
+                    camera.position.set(currentclass.object.scene.position.x, currentclass.object.scene.position.y + 5, currentclass.object.scene.position.z - 5);
+                    camera.lookAt(currentclass.object.scene.position.x, currentclass.object.scene.position.y, currentclass.object.scene.position.z);
+                    // controls.update();
+                }
+            }
+
+            if (this.nametag) {
+                this.nametag.lookAt(this.vehicletype.camera.position);
             }
         }
 
         animateupdates.push(this.animateupdate);
-
-        loader.load( currentclass.vehicletype.file, function ( gltf ) {
-            currentclass.object = gltf;
-            currentclass.objectloaded = true;
-        
-            currentclass.vehicletype.scene.add( currentclass.object.scene );
-
-            currentclass.mixer = new THREE.AnimationMixer( currentclass.object.scene );
-    
-            currentclass.setpreset("idle");
-            currentclass.update();
-        }, undefined, function ( error ) {
-            console.error( error );
-        });
         vehicleinstances.push(this);
         for (const vehicleinstance of vehicleinstances) {
             if (vehicleinstance.driver == username) {
@@ -110,9 +144,10 @@ class vehicleInstance {
 }
 
 class vehicletype {
-    constructor(scene, name, file, animationpresets, abilities, maxspeed, acceleration, turnspeed = acceleration, slowdown = acceleration * 2, brakespeed = maxspeed) {
+    constructor(scene, camera, name, file, animationpresets, abilities, maxspeed, acceleration, turnspeed = acceleration, slowdown = acceleration * 2, brakespeed = maxspeed) {
         this.name = name;
         this.scene = scene;
+        this.camera = camera;
         this.file = file;
         this.animationpresets = animationpresets;
         this.abilities = abilities;
@@ -188,9 +223,9 @@ const presets = {
     drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
     idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
     ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}],
-    ability1one: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
-    ability2one: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
-    ability3one: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability1one: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
+    ability2one: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
+    ability3one: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
     ability2: [{name: 'ability2start', loopmode: 1, after: [{name: 'ability2', loopmode: 20, after: [{name: 'ability2end', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
 };
 
@@ -204,10 +239,10 @@ window.setpreset = (preset) => {
 }
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+window.camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
 
 const renderer = new THREE.WebGLRenderer();
-const controls = new OrbitControls( camera, renderer.domElement );
+// window.controls = new OrbitControls( camera, renderer.domElement );
 renderer.setSize( window.innerWidth, window.innerHeight );
 renderer.setAnimationLoop( animate );
 document.body.appendChild( renderer.domElement );
@@ -243,13 +278,9 @@ window.updateAnimation = () => {
         });
     });
 }
-loader.load( 'assets/maps/map_city.gtlf', function ( gltf ) {
-    van = gltf;
+loader.load( 'assets/maps/map.gltf', function ( gltf ) {
 
     scene.add( gltf.scene );
-    mixer = new THREE.AnimationMixer( van.scene );
-
-    setpreset("idle");
 }, undefined, function ( error ) {
     console.error( error );
 });
@@ -263,7 +294,7 @@ function animate() {
     for (const func of animateupdates) {
         func(delta);
     }
-    controls.update();
+    //controls.update();
     renderer.render( scene, camera );
 }
 
@@ -275,12 +306,12 @@ window.addEventListener('resize', () => {
 
 animate();
 
-window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles/pickup.gltf", {
+window.pickuptrucktype = new vehicletype(scene, camera, "pickup truck", "assets/vehicles/pickup.gltf", {
     drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
     idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],
-    ability1: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
-    ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
-    ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: () => {canchangemode = true;}}]}],
+    ability1: [{name: "ability1", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
+    ability2: [{name: "ability2", loopmode: 1, after: [{name: "idle", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
+    ability3: [{name: "ability3", loopmode: 1, after: [{name: "drive", loopmode: "infinite", run: (clss) => {clss.canchangemode = true;}}]}],
 }, [
     {function: (clss) => {if (currentpreset === "idle") {
         clss.setpreset("ability1");
@@ -294,9 +325,29 @@ window.pickuptrucktype = new vehicletype(scene, "pickup truck", "assets/vehicles
         clss.setpreset("ability3");
         return true;
     }},usesleft: 5}
-], 0.1, 0.0001, 1);
+], .5, .01, 10);
+window.freecandyvantype = new vehicletype(scene, camera, "free candy van", "assets/vehicles/freecandyvan.gltf", {
+    drive: [{name: "drivestrt", loopmode: 1}, {name:"drivefw", loopmode: "infinite"}],
+    idle: [{name: "idlestrt", loopmode: 1}, {name:"idle", loopmode: "infinite"}],ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}],
+    ability1: [{name: 'abilitystart', loopmode: 1, after: [{name: 'ability', loopmode: 5, after: [{name: 'abilityend', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}],
+    ability2: [{name: 'ability2start', loopmode: 1, after: [{name: 'ability2', loopmode: 20, after: [{name: 'ability2end', loopmode: 1}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]}, {name:"drivefw", loopmode: "infinite"}]
+}, [
+    {function: (clss) => {if (currentpreset === "drive") {
+        clss.setpreset("ability1");
+        return true;
+    }}, usesleft: 1},
+    {function: (clss) => {if (currentpreset === "drive") {
+        speed = 10;
+        clss.setpreset("ability2");
+        return true;
+    }}, usesleft: 10}
+], .5, .01, 10);
+window.monstertrucktype = new vehicletype(scene, camera, "Monster truck", "assets/vehicles/MT.gltf", {
+    drive: [{run: (clss) => {clss.currentspeed = clss.vehicletype.maxspeed / 30;}, name: "drivestrt", loopmode: 1, after: [{name:"drivefw", loopmode: "infinite", run: (clss) => {clss.currentspeed = clss.vehicletype.maxspeed;}}]}],
+    idle: [{name: "idlestrt", loopmode: 1, after: [{name:"idle", loopmode: "infinite"}]}]}, [
+], 1, 0, 15, .4, 10);
 
-/**
+/*
  * the following code should be on the back-end -- SweatyCircle439
  */
 

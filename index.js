@@ -1,6 +1,15 @@
 const express = require('express');
 const app = express();
 
+const server = require('http').createServer(app);
+const io = require('socket.io')(server);
+
+
+
+io.on('connection', (client) => {
+    client.on("input");
+});
+
 const bodyParser = require('body-parser');
 
 const sessids = require('sessids')();
@@ -10,6 +19,4 @@ app.use(sessids.sessions);
 
 app.use(express.static("public"));
 
-app.listen(3000, () => {
-    console.log("test development server going live!");
-});
+server.listen(3000);

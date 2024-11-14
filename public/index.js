@@ -342,13 +342,10 @@ window.freecandyvantype = new vehicletype(scene, camera, "free candy van", "asse
         return true;
     }}, usesleft: 10}
 ], .5, .01, 10);
-<<<<<<< HEAD
 window.monstertrucktype = new vehicletype(scene, camera, "Monster truck", "assets/vehicles/MT.gltf", {
     drive: [{run: (clss) => {clss.currentspeed = clss.vehicletype.maxspeed / 30;}, name: "drivestrt", loopmode: 1, after: [{name:"drivefw", loopmode: "infinite", run: (clss) => {clss.currentspeed = clss.vehicletype.maxspeed;}}]}],
     idle: [{name: "idlestrt", loopmode: 1, after: [{name:"idle", loopmode: "infinite"}]}]}, [
 ], 1, 0, 15, .4, 10);
-=======
->>>>>>> 44350bd54e7c0aa381d44a96f768aa758353a640
 
 /*
  * the following code should be on the back-end -- SweatyCircle439

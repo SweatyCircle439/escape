@@ -4,7 +4,19 @@ const app = express();
 const server = require('http').createServer(app);
 const io = require('socket.io')(server);
 
+const escape = {
+    vehicletypes: [],
+    game: class {
+        constructor () {
 
+        }
+    },
+    games: [
+        {
+            
+        }
+    ]
+}
 
 io.on('connection', (client) => {
     client.on("input");
